@@ -1,3 +1,10 @@
+import random
+
+def list_shuffle(list):
+    for i in range(len(list)):
+        random_index = random.randint(i, len(list) - 1)
+        list[random_index], list[i] = list[i], list[random_index]
+
 class User:
     def __init__(self, name):
         self.name = name
@@ -42,11 +49,43 @@ class SocialGraph:
         self.last_id = 0
         self.users = {}
         self.friendships = {}
-        # !!!! IMPLEMENT ME
+        
+        if avg_friendships > num_users:
+            print('WARNING: There must be more users than average friendships')
+
+        friendships = []
 
         # Add users
+        for user in range(1, num_users + 1):
+            self.add_user(user)
+            friendships.append(user)
 
         # Create friendships
+        for user in self.users:
+            list_shuffle(friendships)
+            num_of_friends = random.randint(0, 4)
+            friends_list = friendships[:num_of_friends]
+
+            for friend in friends_list:
+                if user < friend:
+                    self.add_friendship(user, friend)
+
+    def path_to_friend(self, user, friend):
+        queue = []
+        queue.append([user])
+
+        while len(queue) > 0:
+            path = queue.pop(0)
+            current_user = path[-1]
+            friends = self.friendships[current_user]
+
+            if current_user == friend:
+                return path
+
+            for f in friends:
+                path_copy = path.copy()
+                path_copy.append(f)
+                queue.append(path_copy)
 
     def get_all_social_paths(self, user_id):
         """
@@ -58,9 +97,25 @@ class SocialGraph:
         The key is the friend's ID and the value is the path.
         """
         visited = {}  # Note that this is a dictionary, not a set
-        # !!!! IMPLEMENT ME
-        return visited
 
+        visited[user_id] = set()
+        social_connections = []
+        social_connections.append(user_id)
+
+        # Generate a list of all possible social connections and add each one to visited
+        while len(social_connections) > 0:
+            current_user = social_connections.pop(0)
+            friends = self.friendships[current_user]
+
+            for f in friends:
+                if f not in visited:
+                    visited[f] = set()
+                    social_connections.append(f)
+        
+        for friend in visited:
+            visited[friend] = self.path_to_friend(user_id, friend)
+
+        return visited
 
 if __name__ == '__main__':
     sg = SocialGraph()
