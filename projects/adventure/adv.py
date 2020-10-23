@@ -9,12 +9,12 @@ from ast import literal_eval
 # Load world
 world = World()
 
-# # You may uncomment the smaller graphs for development and testing purposes.
-map_file = "maps/test_line.txt"
+# You may uncomment the smaller graphs for development and testing purposes.
+# map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
-# # map_file = "maps/test_loop.txt"
-# # map_file = "maps/test_loop_fork.txt"
-# map_file = "maps/main_maze.txt"
+# map_file = "maps/test_loop.txt"
+# map_file = "maps/test_loop_fork.txt"
+map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph=literal_eval(open(map_file, "r").read())
@@ -28,7 +28,6 @@ player = Player(world.starting_room)
 # Fill this out with directions to walk (['n', 'n'])
 traversal_path = []
 
-# ** DFT TO FIND ROOMS **
 maze_rooms = {}
 
 reverse_direction = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
@@ -38,7 +37,7 @@ starting_room = player.current_room.id
 q = Queue()
 q.enqueue(starting_room)
 
-previous = [None, None] # [Room, Direction]
+previous_path = []
 
 while len(maze_rooms) < len(room_graph):
     room = q.dequeue()
@@ -51,36 +50,40 @@ while len(maze_rooms) < len(room_graph):
         for exit in exits:
             maze_rooms[room][exit] = '?'
         
-        if previous[0] is not None:
-            maze_rooms[room][previous[1]] = previous[0]
-    else:
-        for exit in exits:
-            if exit not in maze_rooms[room].keys():
-                maze_rooms[room][exit] = '?'
-        
     for direction, connection in maze_rooms[room].items():
         if connection == '?':
             unexplored_paths.append(direction)
     
     if len(unexplored_paths) > 0:
+        previous_room = player.current_room.id
         random_exit = random.choice(unexplored_paths)
-        previous = [room, random_exit]
+        reverse = reverse_direction[random_exit]
 
         player.travel(random_exit)
         traversal_path.append(random_exit)
+        previous_path.append(random_exit)
 
-        maze_rooms[room][random_exit] = player.current_room.id
+        current = player.current_room.id
 
-        if player.current_room.id not in maze_rooms:
-            maze_rooms[player.current_room.id] = {}
-            reverse = reverse_direction[previous[1]]
-            maze_rooms[player.current_room.id][reverse] = previous[0]
+        if current not in maze_rooms:
+            maze_rooms[current] = {}
+            exits = player.current_room.get_exits()
+
+            for exit in exits:
+                maze_rooms[current][exit] = '?'
+
+        maze_rooms[room][random_exit] = current
+        maze_rooms[current][reverse] = previous_room
 
         q.enqueue(player.current_room.id)
     else:
-        break
+        if len(previous_path) > 0:
+            direction = previous_path.pop()
+            reverse = reverse_direction[direction]
+            player.travel(reverse)
+            traversal_path.append(reverse)
 
-    q.enqueue(player.current_room.id)
+        q.enqueue(player.current_room.id)
 
 # TRAVERSAL TEST
 visited_rooms = set()
@@ -97,13 +100,13 @@ else:
     print("TESTS FAILED: INCOMPLETE TRAVERSAL")
     print(f"{len(room_graph) - len(visited_rooms)} unvisited rooms")
 
-# # UNCOMMENT TO WALK AROUND
-# # player.current_room.print_room_description(player)
-# # while True:
-# #     cmds = input("-> ").lower().split(" ")
-# #     if cmds[0] in ["n", "s", "e", "w"]:
-# #         player.travel(cmds[0], True)
-# #     elif cmds[0] == "q":
-# #         break
-# #     else:
-# #         print("I did not understand that command.")
+# UNCOMMENT TO WALK AROUND
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")
